@@ -5,6 +5,7 @@ import { BullModule } from '@nestjs/bull';
 import { StudentFileProcessor } from './student-file-upload-processor';
 import { MulterModule } from '@nestjs/platform-express';
 import { HttpModule } from '@nestjs/axios';
+import { NotificationGateway } from 'src/notification.gateway';
 
 @Module({
   imports: [
@@ -17,6 +18,10 @@ import { HttpModule } from '@nestjs/axios';
     HttpModule,
   ],
   controllers: [StudentFileUploadController],
-  providers: [StudentFileUploadService, StudentFileProcessor],
+  providers: [
+    StudentFileUploadService,
+    StudentFileProcessor,
+    NotificationGateway,
+  ],
 })
 export class StudentFileUploadModule {}

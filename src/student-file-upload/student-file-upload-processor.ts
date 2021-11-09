@@ -7,47 +7,54 @@ import {
   OnQueueFailed,
   OnQueueError,
 } from '@nestjs/bull';
-import { Job } from 'bull';
+import { Logger } from '@nestjs/common';
+import { DoneCallback, Job } from 'bull';
+import { NotificationGateway } from 'src/notification.gateway';
 import { StudentFileUploadService } from './student-file-upload.service';
 
 @Processor('student-file-queue')
 export class StudentFileProcessor {
-  constructor(private studentFileUploadService: StudentFileUploadService) {}
+  private readonly logger = new Logger(StudentFileProcessor.name);
+  constructor(private studentFileUploadService: StudentFileUploadService, private notification : NotificationGateway) {}
 
   @Process('upload')
   async handleUpload(job: Job) {
-    //this.logger.debug('Start uploading...');
+    this.logger.debug('Start uploading...');
     console.log('process:', job.data.file);
     await this.studentFileUploadService.bulkUpload(job.data.file);
   }
 
   @OnQueueActive({ name: 'upload' })
   onUploadActive(job: Job) {
-    console.log(
+    this.logger.debug(
       `Processing job ${job.id} of type ${job.name} with data ${job.data}...`,
     );
   }
 
   @OnQueueError({ name: 'upload' })
   onUploadError(job: Job) {
-    console.log(
+    this.logger.debug(
       `Processing job ${job.id} of type ${job.name} with data ${job.data}...`,
     );
   }
 
   @OnQueueCompleted({ name: 'upload' })
   async onUploadComplete(job: Job, result: any) {
-    //send notification
-    console.log(
-      `Processed job ${job.id} of type ${job.name} with data ${job.data}...`,
-    );
+    if(job.isCompleted){
+      this.logger.debug(
+        `Processed job ${job.id} of type ${job.name} with data ${job.data}...`,
+      );
+      this.notification.sendMessage('Upload Completed Successfully!');
+    }
   }
 
   @OnQueueFailed({ name: 'upload' })
   onUploadFailed(job: Job) {
-    //send notification
-    console.log(
-      `Processing failed job ${job.id} of type ${job.name} with data ${job.data}...`,
-    );
+    if(job.isFailed){
+      this.logger.debug(
+        `Processing failed job ${job.id} of type ${job.name} with data ${job.data}...`,
+      );
+      this.notification.sendMessage('Upload Failed!');
+    }
   }
 }

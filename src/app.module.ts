@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { StudentFileUploadModule } from './student-file-upload/student-file-upload.module';
 import { BullModule } from '@nestjs/bull';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { NotificationGateway } from './notification.gateway';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -12,19 +12,12 @@ import { NotificationGateway } from './notification.gateway';
         port: 6379,
       },
     }),
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: '1qazxsw2',
-      database: 'Students',
-      entities: ['dist/**/*.entity{.ts,.js}'],
-      synchronize: true,
+    ConfigModule.forRoot({
+      isGlobal: true,
     }),
     StudentFileUploadModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [NotificationGateway],
 })
 export class AppModule {}

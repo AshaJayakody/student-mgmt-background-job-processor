@@ -1,6 +1,7 @@
 /* eslint-disable no-var */
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import xlsx from 'node-xlsx';
 import { CreateStudentInput } from './dto/create-student.input';
@@ -8,7 +9,10 @@ import CREATE_BULK_STUDENTS from './query/create-bulk-student-mutation';
 
 @Injectable()
 export class StudentFileUploadService {
-  constructor(private httpService: HttpService) {}
+  constructor(
+    private httpService: HttpService,
+    private configService: ConfigService,
+  ) {}
 
   async bulkUpload(jobData: Express.Multer.File) {
     const chunks = [];
@@ -29,14 +33,13 @@ export class StudentFileUploadService {
           for (let i = 0; i < workbook.length; i++) {
             for (let j = 1; j < workbook[i].data.length; j++) {
               const object = {};
-              const date = new Date();
 
               object[workbook[i].data[0][0]] = workbook[i].data[j][0];
               object[workbook[i].data[0][1]] = workbook[i].data[j][1];
               object[workbook[i].data[0][2]] = workbook[i].data[j][2];
-              object[workbook[i].data[0][3]] = date.setDate(
-                date.getDate() + workbook[i].data[j][3],
-              ); //todo : fix parse xlsx error in date convertion
+              object[workbook[i].data[0][3]] = new Date(
+                (workbook[i].data[j][3] - 25567 - 2) * 86400 * 1000,
+              );
 
               const student = new CreateStudentInput();
               Object.assign(student, object);
@@ -45,7 +48,7 @@ export class StudentFileUploadService {
           }
 
           const request = {
-            url: 'http://localhost:3000/graphql', //todo : put into config
+            url: this.configService.get<string>('GRAPHQL_SERVER_URL'),
             method: 'post',
             data: {
               query: CREATE_BULK_STUDENTS,
@@ -56,8 +59,8 @@ export class StudentFileUploadService {
           };
 
           await this.httpService.post(request.url, request.data).subscribe(
-            (result) => {
-              console.log('successfuly executed create bulk student', result);
+            () => {
+              console.log('successfuly executed create bulk student');
             },
             (error) => {
               console.log('failed create bulk student execution', error);
@@ -65,7 +68,6 @@ export class StudentFileUploadService {
             },
           );
         } catch (error) {
-          console.log(error.message);
           throw new Error('Error occured!');
         }
       });
