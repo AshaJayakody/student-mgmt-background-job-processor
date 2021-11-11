@@ -1,17 +1,21 @@
 /* eslint-disable no-var */
 import { HttpService } from '@nestjs/axios';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import xlsx from 'node-xlsx';
+import { NotificationGateway } from 'src/notification.gateway';
 import { CreateStudentInput } from './dto/create-student.input';
 import CREATE_BULK_STUDENTS from './query/create-bulk-student-mutation';
 
 @Injectable()
 export class StudentFileUploadService {
+  private readonly logger = new Logger(StudentFileUploadService.name);
+
   constructor(
     private httpService: HttpService,
     private configService: ConfigService,
+    private notification: NotificationGateway,
   ) {}
 
   async bulkUpload(jobData: Express.Multer.File) {
@@ -19,8 +23,10 @@ export class StudentFileUploadService {
     const students: CreateStudentInput[] = [];
     fs.createReadStream(jobData.path)
       .on('error', (error) => {
-        console.error(error);
-        throw error.message;
+        this.logger.debug(
+          new Date().toUTCString() + ' - Error in reading file - ' + error,
+        );
+        this.notification.sendMessage('Error in reading file!');
       })
       .on('data', (row) => {
         chunks.push(row);
@@ -60,15 +66,29 @@ export class StudentFileUploadService {
 
           await this.httpService.post(request.url, request.data).subscribe(
             () => {
-              console.log('successfuly executed create bulk student');
+              this.logger.debug(
+                new Date().toUTCString() + ' - Students upload completed - ',
+              );
+              this.notification.sendMessage('Students upload completed!');
             },
             (error) => {
-              console.log('failed create bulk student execution', error);
-              throw new Error('Error in student bulk creation');
+              this.logger.debug(
+                new Date().toUTCString() +
+                  ' - Error in saving students to database - ' +
+                  error,
+              );
+              this.notification.sendMessage(
+                'Error in saving students to database!',
+              );
             },
           );
         } catch (error) {
-          throw new Error('Error occured!');
+          this.logger.debug(
+            new Date().toUTCString() +
+              ' - Error in processing file -  ' +
+              error,
+          );
+          this.notification.sendMessage('Error in processing file!');
         }
       });
   }

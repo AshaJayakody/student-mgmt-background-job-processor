@@ -8,7 +8,6 @@ import {
   OnQueueError,
 } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
-import { DoneCallback, Job } from 'bull';
 import { NotificationGateway } from 'src/notification.gateway';
 import { StudentFileUploadService } from './student-file-upload.service';
 
@@ -36,16 +35,14 @@ export class StudentFileProcessor {
     this.logger.debug(
       `Processing job ${job.id} of type ${job.name} with data ${job.data}...`,
     );
+    this.notification.sendMessage('Upload Error!');
   }
 
   @OnQueueCompleted({ name: 'upload' })
   async onUploadComplete(job: Job, result: any) {
-    if(job.isCompleted){
       this.logger.debug(
         `Processed job ${job.id} of type ${job.name} with data ${job.data}...`,
       );
-      this.notification.sendMessage('Upload Completed Successfully!');
-    }
   }
 
   @OnQueueFailed({ name: 'upload' })
