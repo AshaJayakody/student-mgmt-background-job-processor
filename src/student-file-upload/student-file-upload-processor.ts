@@ -8,6 +8,7 @@ import {
   OnQueueError,
 } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
+import { Job } from 'bull';
 import { NotificationGateway } from 'src/notification.gateway';
 import { StudentFileUploadService } from './student-file-upload.service';
 
