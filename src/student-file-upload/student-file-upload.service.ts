@@ -23,10 +23,13 @@ export class StudentFileUploadService {
     const students: CreateStudentInput[] = [];
     fs.createReadStream(jobData.path)
       .on('error', (error) => {
-        this.logger.debug(
+        this.logger.error(
           new Date().toUTCString() + ' - Error in reading file - ' + error,
         );
-        this.notification.sendMessage('Error in reading file!');
+        this.notification.sendMessage({
+          message: 'Error in reading file -' + jobData.filename,
+          statusCode: -1,
+        });
       })
       .on('data', (row) => {
         chunks.push(row);
@@ -66,29 +69,36 @@ export class StudentFileUploadService {
 
           await this.httpService.post(request.url, request.data).subscribe(
             () => {
-              this.logger.debug(
+              this.logger.log(
                 new Date().toUTCString() + ' - Students upload completed - ',
               );
-              this.notification.sendMessage('Students upload completed!');
+              this.notification.sendMessage({
+                message: 'Students file upload completed -' + jobData.filename,
+                statusCode: 0,
+              });
             },
             (error) => {
-              this.logger.debug(
+              this.logger.error(
                 new Date().toUTCString() +
                   ' - Error in saving students to database - ' +
                   error,
               );
-              this.notification.sendMessage(
-                'Error in saving students to database!',
-              );
+              this.notification.sendMessage({
+                message: 'Error in saving students to database -' + jobData.filename,
+                statusCode: -1,
+              });
             },
           );
         } catch (error) {
-          this.logger.debug(
+          this.logger.error(
             new Date().toUTCString() +
               ' - Error in processing file -  ' +
               error,
           );
-          this.notification.sendMessage('Error in processing file!');
+          this.notification.sendMessage({
+            message: 'Error in reading file -' + jobData.filename,
+            statusCode: -1,
+          });
         }
       });
   }
